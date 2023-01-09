@@ -9,7 +9,6 @@ module ws2811
     )
    (
     input                              clk,          // Clock input.
-    input                              reset,        // Resets the internal state of the driver
 
     /////////////////////
     // Control signals //
@@ -46,11 +45,11 @@ module ws2811
    // A '1' is 50% duty cycle, a '0' is 20% duty cycle.       //
    /////////////////////////////////////////////////////////////
    localparam integer CYCLE_COUNT         = SYSTEM_CLOCK / 800000;
-   localparam integer H0_CYCLE_COUNT      = 0.32 * CYCLE_COUNT;
-   localparam integer H1_CYCLE_COUNT      = 0.64 * CYCLE_COUNT;
+   localparam integer H0_CYCLE_COUNT      = 0.24 * CYCLE_COUNT;
+   localparam integer H1_CYCLE_COUNT      = 0.76 * CYCLE_COUNT;
    localparam integer CLOCK_DIV_WIDTH     = log2(CYCLE_COUNT);
    
-   localparam integer RESET_COUNT         = 100 * CYCLE_COUNT;
+   localparam integer RESET_COUNT         = 250 * CYCLE_COUNT;
    localparam integer RESET_COUNTER_WIDTH = log2(RESET_COUNT);
 
    reg [CLOCK_DIV_WIDTH-1:0]             clock_div;           // Clock divider for a cycle
@@ -84,16 +83,15 @@ module ws2811
    assign data_request = reset_almost_done || led_almost_done;
    assign new_address  = (state == STATE_PRE) && (current_bit == 7);
    
+   initial begin
+    address <= 0;
+    state <= STATE_RESET;
+    DO <= 0;
+    reset_counter <= 0;
+    color <= COLOR_G;
+    current_bit <= 7;
+   end
    always @ (posedge clk) begin
-      if (reset) begin
-         address <= 0;
-         state <= STATE_RESET;
-         DO <= 0;
-         reset_counter <= 0;
-         color <= COLOR_G;
-         current_bit <= 7;
-      end
-      else begin
          case (state)
            STATE_RESET: begin
               // De-assert DO, and wait for 75 us.
@@ -187,7 +185,6 @@ module ws2811
               end
            end
          endcase
-      end
    end
    
 endmodule
